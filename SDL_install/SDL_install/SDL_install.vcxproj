@@ -13,6 +13,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{2BF54884-5572-4775-8577-9CE429383AFD}</ProjectGuid>
     <RootNamespace>SDL_install</RootNamespace>
+    <ProjectName>SDL_Geometry</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
