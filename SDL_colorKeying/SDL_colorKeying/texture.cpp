@@ -77,3 +77,21 @@ void TGfxTexture::render(int x, int y)
 
 	SDL_RenderCopy(g_pRenderer, m_pTexture, nullptr, &renderQuad);
 }
+
+
+void TGfxTexture::setColor(Uint8 red, Uint8 green, Uint8 blue)
+{
+	//Modulate texture
+	SDL_SetTextureColorMod(m_pTexture, red, green, blue);
+}
+void TGfxTexture::setBlendMode(SDL_BlendMode blending)
+{
+	//Set blending function
+	SDL_SetTextureBlendMode(m_pTexture, blending);
+}
+
+void TGfxTexture::setAlpha(Uint8 alpha)
+{
+	//Modulate texture alpha
+	SDL_SetTextureAlphaMod(m_pTexture, alpha);
+}

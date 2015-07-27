@@ -13,12 +13,10 @@ TGfxSprite::TGfxSprite()
 	m_iPosX = 0;
 	m_iPosY = 0;
 }
-
 TGfxSprite::~TGfxSprite()
 {
 	free();
 }
-
 bool TGfxSprite::loadFromTexture(TGfxTexture* pTexture, SDL_Rect tCut)
 {
 	if (pTexture != nullptr)
@@ -39,11 +37,24 @@ void TGfxSprite::free()
 		m_iPosY = 0;
 	}
 }
-
 void TGfxSprite::render()
 {
 	//Set rendering space and render to screen
 	SDL_Rect renderQuad = {m_iPosX, m_iPosY, m_tCut.w, m_tCut.h};
 	
 	SDL_RenderCopy(g_pRenderer, m_pTexture->getTexture(), &m_tCut, &renderQuad);
+}
+
+void TGfxSprite::setColor(Uint8 red, Uint8 green, Uint8 blue)
+{
+	m_pTexture->setColor(red, green, blue);
+}
+void TGfxSprite::setBlendMode(SDL_BlendMode blending)
+{
+	m_pTexture->setBlendMode(blending);
+}
+
+void TGfxSprite::setAlpha(Uint8 alpha)
+{
+	m_pTexture->setAlpha(alpha);
 }

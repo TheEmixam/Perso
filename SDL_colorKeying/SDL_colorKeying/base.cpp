@@ -14,6 +14,7 @@ SDL_Renderer* g_pRenderer = nullptr;
 
 TGfxSprite gSpriteClips[4];
 TGfxTexture gSpriteSheetTexture;
+Uint8 a = 255;
 
 bool LoadMedia()
 {
@@ -47,6 +48,8 @@ bool LoadMedia()
 		gSpriteClips[3].loadFromTexture(&gSpriteSheetTexture, clip);
 		gSpriteClips[3].setX(SCREEN_WIDTH - clip.w);
 		gSpriteClips[3].setY(SCREEN_HEIGHT - clip.h);
+
+		gSpriteSheetTexture.setBlendMode(SDL_BLENDMODE_BLEND);
 	}
 
 	return bSuccess;
@@ -57,20 +60,46 @@ void Update()
 	SDL_SetRenderDrawColor(g_pRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
 	SDL_RenderClear(g_pRenderer);
 
+	gSpriteSheetTexture.setAlpha(a);
+
 	//Render top left sprite
 	gSpriteClips[0].render();
-
 	//Render top right sprite
 	gSpriteClips[1].render();
-
 	//Render bottom left sprite
 	gSpriteClips[2].render();
-
 	//Render bottom right sprite
 	gSpriteClips[3].render();
 
 	//Update screen
 	SDL_RenderPresent(g_pRenderer);
+}
+bool Inputs(SDL_Event e)
+{
+	//Handle events on queue
+	while (SDL_PollEvent(&e) != 0)
+	{
+		switch (e.type)
+		{
+		case SDL_KEYDOWN:
+			switch (e.key.keysym.sym)
+			{
+			case SDLK_DOWN:
+				if (a - 32 < 0) a = 0;
+				else a -= 32;
+				break;
+			case SDLK_UP:
+				if (a + 32 > 255) a = 255;
+				else a += 32;
+				break;			
+			}
+			break;
+		case SDL_QUIT:
+			return true;
+			break;
+		}
+	}
+	return false;
 }
 
 
@@ -128,30 +157,19 @@ bool Init()
 
 	return bSuccess;
 }
-void Loop(void (*update)(), void (*close)())
+void Loop(bool(*inputs)(SDL_Event e), void(*update)())
 {
 	//Main loop flag
 	bool quit = false;
 	//Event handler
-	SDL_Event e;
-
+	SDL_Event ev = SDL_Event();
+	
 	//While application is running
 	while (!quit)
 	{
+		if (inputs(ev)) quit = true;
 		update();
-		//Handle events on queue
-		while (SDL_PollEvent(&e) != 0)
-		{
-			//User requests quit
-			if (e.type == SDL_QUIT)
-			{
-				quit = true;
-			}
-		}
 	}
-
-	//Free resources and close SDL
-	close();
 }
 void Close()
 {

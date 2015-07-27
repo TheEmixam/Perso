@@ -9,8 +9,9 @@ struct TGfxTexture;
 
 bool Init();
 bool LoadMedia();
-void Loop(void(*update)(), void(*close)());
+void Loop(bool(*inputs)(SDL_Event e), void(*update)());
 void Update();
+bool Inputs(SDL_Event e);
 void Close();
 
 //Loads individual image as texture

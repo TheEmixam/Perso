@@ -20,9 +20,11 @@ int main(int argc, char* args[])
 		}
 		else
 		{
-			Loop(Update, Close);
+			Loop(Inputs, Update);
 		}
 	}
+
+	Close();
 	//Wait two seconds
 	SDL_Delay(1000);
 	return 0;
