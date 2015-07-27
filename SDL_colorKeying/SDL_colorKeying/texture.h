@@ -27,6 +27,7 @@ public:
 	//Gets image dimensions
 	int getWidth(){ return m_iWidth; }
 	int getHeight(){ return m_iHeight; }
+	SDL_Texture* getTexture()const{ return m_pTexture; }
 
 private:
 	//The actual hardware texture

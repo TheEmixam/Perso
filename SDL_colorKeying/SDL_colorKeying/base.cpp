@@ -4,6 +4,7 @@
 #include <string>
 #include "base.h"
 #include "texture.h"
+#include "sprite.h"
 
 SDL_Window* g_pWindow = nullptr;
 SDL_Surface* g_pScreenSurface = nullptr;
@@ -11,26 +12,41 @@ SDL_Surface* g_pStretchedSurface = nullptr;
 
 SDL_Renderer* g_pRenderer = nullptr;
 
-TGfxTexture* g_tFooTexture = new TGfxTexture();
-TGfxTexture* g_tBackgroundTexture = new TGfxTexture();
+TGfxSprite gSpriteClips[4];
+TGfxTexture gSpriteSheetTexture;
 
 bool LoadMedia()
 {
 	//Loading success flag
 	bool bSuccess = true;
 
-	//Load Foo' texture
-	if (!g_tFooTexture->loadFromFile("img/foo.png"))
+	//Load sprite sheet texture
+	if (!gSpriteSheetTexture.loadFromFile("img/dots.png"))
 	{
-		printf("Failed to load Foo' texture image!\n");
+		printf("Failed to load sprite sheet texture!\n");
 		bSuccess = false;
 	}
-
-	//Load background texture
-	if (!g_tBackgroundTexture->loadFromFile("img/background.png"))
+	else
 	{
-		printf("Failed to load background texture image!\n");
-		bSuccess = false;
+		//UL
+		SDL_Rect clip = { 0, 0, 100, 100 };
+		gSpriteClips[0].loadFromTexture(&gSpriteSheetTexture, clip);
+
+		//UR
+		clip = { 100, 0, 100, 100 };
+		gSpriteClips[1].loadFromTexture(&gSpriteSheetTexture, clip);
+		gSpriteClips[1].setX(SCREEN_WIDTH - clip.w);
+		
+		//DL
+		clip = { 0, 100, 100, 100 };
+		gSpriteClips[2].loadFromTexture(&gSpriteSheetTexture, clip);
+		gSpriteClips[2].setY(SCREEN_HEIGHT - clip.h);
+
+		//DR
+		clip = { 100, 100, 100, 100 };
+		gSpriteClips[3].loadFromTexture(&gSpriteSheetTexture, clip);
+		gSpriteClips[3].setX(SCREEN_WIDTH - clip.w);
+		gSpriteClips[3].setY(SCREEN_HEIGHT - clip.h);
 	}
 
 	return bSuccess;
@@ -41,11 +57,17 @@ void Update()
 	SDL_SetRenderDrawColor(g_pRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
 	SDL_RenderClear(g_pRenderer);
 
-	//Render background texture to screen
-	g_tBackgroundTexture->render(0, 0);
+	//Render top left sprite
+	gSpriteClips[0].render();
 
-	//Render Foo' to the screen
-	g_tFooTexture->render(240, 190);
+	//Render top right sprite
+	gSpriteClips[1].render();
+
+	//Render bottom left sprite
+	gSpriteClips[2].render();
+
+	//Render bottom right sprite
+	gSpriteClips[3].render();
 
 	//Update screen
 	SDL_RenderPresent(g_pRenderer);
@@ -156,13 +178,15 @@ void Close()
 
 	//----------Dellocation
 
+	gSpriteClips[0].free();
+	gSpriteClips[1].free();
+	gSpriteClips[2].free();
+	gSpriteClips[3].free();
+	gSpriteSheetTexture.free();
+
 	//Deallocate surface
 	SDL_FreeSurface(g_pScreenSurface);
 	g_pScreenSurface = nullptr;
-
-	//Free loaded images
-	g_tFooTexture->free();
-	g_tBackgroundTexture->free();
 
 	//Destroy window
 	SDL_DestroyRenderer(g_pRenderer);

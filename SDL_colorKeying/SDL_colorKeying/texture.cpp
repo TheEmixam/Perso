@@ -7,11 +7,10 @@
 TGfxTexture::TGfxTexture()
 {
 	//Initialize
-	m_pTexture = NULL;
+	m_pTexture = nullptr;
 	m_iWidth = 0;
 	m_iHeight = 0;
 }
-
 TGfxTexture::~TGfxTexture()
 {
 	//Deallocate
@@ -75,5 +74,6 @@ void TGfxTexture::render(int x, int y)
 {
 	//Set rendering space and render to screen
 	SDL_Rect renderQuad = { x, y, m_iWidth, m_iHeight };
-	SDL_RenderCopy(g_pRenderer, m_pTexture, NULL, &renderQuad);
+
+	SDL_RenderCopy(g_pRenderer, m_pTexture, nullptr, &renderQuad);
 }

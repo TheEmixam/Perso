@@ -27,7 +27,5 @@ extern SDL_Window* g_pWindow;
 extern SDL_Surface* g_pScreenSurface;
 
 extern SDL_Renderer* g_pRenderer;
-extern TGfxTexture* g_tFooTexture;
-extern TGfxTexture* g_tBackgroundTexture;
 
 #endif
