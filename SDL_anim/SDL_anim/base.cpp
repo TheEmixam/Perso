@@ -13,6 +13,7 @@ SDL_Renderer* g_pRenderer = nullptr;
 
 TGfxTexture g_tTexture;
 TGfxSprite g_tAnim;
+TGfxSprite g_tTest;
 const int WALKING_ANIMATION_FRAMES = 4;
 SDL_Rect g_tSpriteClips[WALKING_ANIMATION_FRAMES];
 int frame = 0;
@@ -54,7 +55,15 @@ bool LoadMedia()
 		g_tAnim.loadFromTexture(&g_tTexture, g_tSpriteClips[0]);
 		SDL_Point* center = new SDL_Point({32,103});
 		g_tAnim.rotate(30, center);
-		g_tAnim.setX(100);
+		g_tAnim.setPos(100, 0);
+		g_tAnim.flip(SDL_FLIP_HORIZONTAL);
+
+		SDL_Rect test = { 20, 20, 100, 100 };
+		g_tTest.loadFromTexture(&g_tTexture, test);
+		g_tTest.setPos(30, 150);
+		g_tTest.setColor(255, 0, 255);
+		g_tTest.setBlendMode(SDL_BLENDMODE_BLEND);
+		g_tTest.setAlpha(125);
 	}
 
 
@@ -76,6 +85,7 @@ void Update()
 	SDL_Rect currentClip = g_tSpriteClips[frame / 10];
 	g_tAnim.setCut(currentClip);
 
+	g_tTest.render();
 	g_tAnim.render();
 	//Update screen
 	SDL_RenderPresent(g_pRenderer);
