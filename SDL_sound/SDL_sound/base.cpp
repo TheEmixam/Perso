@@ -3,6 +3,7 @@
 #include <SDL_image.h>
 #include <string>
 #include <SDL_ttf.h>
+#include <SDL_mixer.h>
 #include "base.h"
 #include "texture.h"
 #include "sprite.h"
@@ -14,6 +15,8 @@ TTF_Font *g_pFont = nullptr;
 //Game Controller 1 handler
 SDL_Joystick* g_pGameController = nullptr;
 SDL_Haptic* g_pControllerHaptic = nullptr;
+//The sound effects that will be used
+Mix_Chunk *gHigh = NULL;
 
 //Normalized direction
 int xDir = 0;
@@ -26,6 +29,13 @@ bool LoadMedia()
 {
 	//Loading success flag
 	bool bSuccess = true;
+	
+	gHigh = Mix_LoadWAV("sound/high.wav");
+	if (gHigh == NULL)
+	{
+		printf("Failed to load high sound effect! SDL_mixer Error: %s\n", Mix_GetError());
+		bSuccess = false;
+	}
 
 	return bSuccess;
 }
@@ -38,7 +48,7 @@ void Update()
 	//Calculate angle
 	double joystickAngle = atan2((double)yDir, (double)xDir) * (180.0 / M_PI);
 
-	printf("Joystick angle: %f\n", joystickAngle);
+	//printf("Joystick angle: %f\n", joystickAngle);
 
 	SDL_RenderPresent(g_pRenderer);
 }
@@ -91,6 +101,15 @@ bool Inputs(SDL_Event e)
 				printf("Warning: Unable to play rumble! %s\n", SDL_GetError());
 			}
 			break;
+		case SDL_KEYDOWN:
+			switch (e.key.keysym.sym)
+			{
+				//Play high sound effect
+			case SDLK_1:
+				Mix_PlayChannel(-1, gHigh, 0);
+				break;
+			}
+			break;
 		}
 	}
 
@@ -134,7 +153,7 @@ bool Init()
 	bool bSuccess = true;
 
 	//Initialize SDL
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC) < 0)
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC | SDL_INIT_AUDIO) < 0)
 	{
 		printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
 		bSuccess = false;
@@ -208,6 +227,13 @@ bool Init()
 					bSuccess = false;
 				}
 
+				//Initialize SDL_mixer
+				if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
+				{
+					printf("SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError());
+					bSuccess = false;
+				}
+
 				//Initialize SDL_ttf
 				if (TTF_Init() == -1)
 				{
@@ -258,6 +284,10 @@ void Close()
 
 
 	//----------Dellocation
+	//Free the sound effects
+	Mix_FreeChunk(gHigh);
+	gHigh = NULL;
+
 	//Free loaded images
 
 	//Close game controller
@@ -278,6 +308,7 @@ void Close()
 	g_pWindow = nullptr;
 
 	//Quit SDL subsystems
+	Mix_Quit();
 	TTF_Quit();
 	IMG_Quit();
 	SDL_Quit();
