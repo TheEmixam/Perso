@@ -81,13 +81,23 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="base.cpp" />
+    <ClCompile Include="BounceZone.cpp" />
+    <ClCompile Include="Caillou.cpp" />
+    <ClCompile Include="camera.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="parallax.cpp" />
     <ClCompile Include="sprite.cpp" />
     <ClCompile Include="texture.cpp" />
     <ClCompile Include="vec2.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="base.h" />
+    <ClInclude Include="BounceZone.h" />
+    <ClInclude Include="caillou.h" />
+    <ClInclude Include="camera.h" />
+    <ClInclude Include="graphique.h" />
+    <ClInclude Include="parallax.h" />
+    <ClInclude Include="speedParticle.h" />
     <ClInclude Include="sprite.h" />
     <ClInclude Include="texture.h" />
     <ClInclude Include="vec2.h" />

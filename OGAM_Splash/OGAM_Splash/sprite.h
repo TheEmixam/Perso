@@ -1,5 +1,6 @@
 #ifndef _SPRITE_H_INCLUDED
 #define _SPRITE_H_INCLUDED
+#include <SDL_types.h>
 
 class TGfxTexture;
 

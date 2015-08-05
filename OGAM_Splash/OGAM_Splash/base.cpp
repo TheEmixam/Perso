@@ -8,116 +8,13 @@
 #include "texture.h"
 #include "sprite.h"
 #include "vec2.h"
+#include "graphique.h"
+#include "camera.h"
+#include "BounceZone.h"
+#include "caillou.h"
+#include "parallax.h"
 
-struct TGraphique
-{
-	TGfxVec2 m_tPos;
-	TGfxSprite* m_pSprite;
-};
 
-class TBounceZone : public TGraphique
-{
-public:
-	TBounceZone(int x, int radius){
-		m_tPos = TGfxVec2(x, 10);
-		m_iRadius = radius;
-	}
-
-	void render(){
-		SDL_SetRenderDrawColor(g_pRenderer, 0x00, 0x00, 0x00, 0xFF);
-		SDL_RenderDrawLine(g_pRenderer, m_tPos.x - m_iRadius, m_tPos.y, m_tPos.x + m_iRadius, m_tPos.y);
-	}
-
-	int getRadius(){ return m_iRadius; }
-
-	static int m_iCount;
-	static const int m_iMaxZones;
-private:
-	float m_iRadius;
-};
-int TBounceZone::m_iCount = 0;
-const int TBounceZone::m_iMaxZones = 100;
-
-class TCaillou : public TGraphique
-{
-public:
-	TCaillou(){
-		m_tDest = TGfxVec2(0, 0);
-		m_tGrav = TGfxVec2(0, -0.1f);
-		m_tPos = TGfxVec2(20, 30);
-		m_iRadius = 10;
-	}
-
-	bool move(TBounceZone *tBZone)
-	{
-		m_tDest += m_tGrav;
-		TGfxVec2 newPos = m_tPos + m_tDest;
-		if (tBZone != nullptr){
-			if (newPos.y - m_iRadius < tBZone->m_tPos.y){
-				if (newPos.x + m_iRadius > tBZone->m_tPos.x - tBZone->getRadius() && newPos.x - m_iRadius < tBZone->m_tPos.x + tBZone->getRadius()){
-					TGfxVec2 vecNormale = TGfxVec2(0, 1);
-					TGfxVec2 rebond = -(m_tDest.DotProduct(vecNormale)*vecNormale) * 2;
-					m_tDest += rebond;
-		
-					newPos.y = tBZone->m_tPos.y + m_iRadius;
-					float ratio = 1 - (pow(newPos.x - tBZone->m_tPos.x, 2) / (tBZone->getRadius()*tBZone->getRadius()));
-					m_tDest = m_tDest * ratio;
-					//newPos += m_tDest;
-				}
-			}
-		}
-
-		m_tPos = newPos;
-
-		return true;
-	}
-
-	void addForce(TGfxVec2 tForce){
-		m_tDest += tForce;
-	}
-
-	void render(){
-		SDL_Rect t = { m_tPos.x - m_iRadius, m_tPos.y - m_iRadius, m_iRadius * 2, m_iRadius * 2 };
-		SDL_SetRenderDrawColor(g_pRenderer, 0xFF, 0x00, 0x00, 0xFF);
-		SDL_RenderFillRect(g_pRenderer, &t);
-	}
-private:
-	TGfxVec2 m_tDest;
-	TGfxVec2 m_tGrav;
-	int m_iRadius;
-};
-
-class TCamera : public TGraphique
-{
-public: 
-	TCamera(TCaillou *pCaillou, TBounceZone *pBounce[]){
-		m_pCaillou = pCaillou;
-		m_pBounce = pBounce;
-	}
-	void updateCam()
-	{
-		m_tPos = TGfxVec2(m_pCaillou->m_tPos.x - SCREEN_WIDTH / 2, 0);
-		TGfxVec2 oldPos;
-
-		oldPos = m_pCaillou->m_tPos;
-		m_pCaillou->m_tPos = TGfxVec2(oldPos.x, SCREEN_HEIGHT-oldPos.y) - m_tPos;
-		m_pCaillou->render();
-		m_pCaillou->m_tPos = oldPos;
-
-		for (int i = 0; i < TBounceZone::m_iMaxZones; i++){
-			if (m_pBounce[i] != nullptr){
-				oldPos = m_pBounce[i]->m_tPos;
-				m_pBounce[i]->m_tPos = TGfxVec2(oldPos.x, SCREEN_HEIGHT - oldPos.y) - m_tPos;
-				m_pBounce[i]->render();
-				m_pBounce[i]->m_tPos = oldPos;
-			}
-		}
-	}
-
-private:
-	TCaillou * m_pCaillou;
-	TBounceZone ** m_pBounce;
-};
 
 SDL_Window* g_pWindow = nullptr;
 SDL_Renderer* g_pRenderer = nullptr;
@@ -139,6 +36,10 @@ TBounceZone * g_pActualZone = nullptr;
 TCamera * pCam;
 
 
+TParallax g_pParallax[NB_PARALLAX];
+TGfxTexture g_pParallaxTexture[NB_PARALLAX];
+
+
 
 
 bool LoadMedia()
@@ -153,8 +54,39 @@ bool LoadMedia()
 		bSuccess = false;
 	}
 
-	Caillou.addForce(TGfxVec2(2, 10));
-	pCam = new TCamera(&Caillou, g_pBZones);
+	if (!g_pParallaxTexture[0].loadFromFile("img/sky.png"))
+	{
+		printf("Error loading texture\n");
+		bSuccess = false;
+	}
+	if (!g_pParallaxTexture[1].loadFromFile("img/mountains.png"))
+	{
+		printf("Error loading texture\n");
+		bSuccess = false;
+	}
+	if (!g_pParallaxTexture[2].loadFromFile("img/water.png"))
+	{
+		printf("Error loading texture\n");
+		bSuccess = false;
+	}
+	if (!g_pParallaxTexture[3].loadFromFile("img/grass.png"))
+	{
+		printf("Error loading texture\n");
+		bSuccess = false;
+	}
+
+	g_pParallax[0].setTexture(&g_pParallaxTexture[0]);
+	g_pParallax[1].setTexture(&g_pParallaxTexture[1]);
+	g_pParallax[2].setTexture(&g_pParallaxTexture[2]);
+	g_pParallax[3].setTexture(&g_pParallaxTexture[3]);
+
+	g_pParallax[0].setDepth(12);
+	g_pParallax[1].setDepth(2);
+	g_pParallax[2].setDepth(1);
+	g_pParallax[3].setDepth(-5);
+
+	Caillou.addForce(TGfxVec2(7, 6));
+	pCam = new TCamera(&Caillou, g_pBZones, g_pParallax);
 
 	return bSuccess;
 }
@@ -168,9 +100,15 @@ void Update()
 	double joystickAngle = atan2((double)yDir, (double)xDir) * (180.0 / M_PI);
 
 	//printf("Joystick angle: %f\n", joystickAngle);
+	TGfxVec2 tDeplacement;
+	if (Caillou.move(g_pActualZone, &tDeplacement)){
+		g_pActualZone = nullptr;
+	}
 
-	Caillou.move(g_pActualZone);
-
+	for (int i = 0; i < NB_PARALLAX; i++)
+	{
+		g_pParallax[i].move(tDeplacement, pCam);
+	}
 	
 	pCam->updateCam();
 	//Caillou.render();
@@ -233,8 +171,10 @@ bool Inputs(SDL_Event e)
 				Mix_PlayChannel(-1, gHigh, 0);
 				break;
 			case SDLK_SPACE:
-				g_pBZones[TBounceZone::m_iCount++] = new TBounceZone(Caillou.m_tPos.x, 50);
-				g_pActualZone = g_pBZones[TBounceZone::m_iCount - 1];
+				if (g_pActualZone == nullptr){
+					g_pBZones[TBounceZone::m_iCount++] = new TBounceZone(Caillou.m_tPos.x + 300, 50);
+					g_pActualZone = g_pBZones[TBounceZone::m_iCount - 1];
+				}
 				break;
 			}
 			break;
