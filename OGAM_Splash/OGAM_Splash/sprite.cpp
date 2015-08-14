@@ -9,7 +9,7 @@
 TGfxSprite::TGfxSprite()
 {
 	m_pTexture = nullptr;
-	m_tInfos = { SDL_Rect(), 0, 0, 0.0, nullptr, SDL_FLIP_NONE, SDL_BLENDMODE_NONE, 0, { 0, 0, 0 } };
+	m_tInfos = { SDL_Rect(), 0, 0, 0.0, nullptr, SDL_FLIP_NONE, SDL_BLENDMODE_NONE, 0, { 0xFF, 0xFF, 0xFF } };
 }
 TGfxSprite::~TGfxSprite()
 {

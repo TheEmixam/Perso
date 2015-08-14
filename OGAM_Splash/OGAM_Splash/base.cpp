@@ -13,6 +13,7 @@
 #include "BounceZone.h"
 #include "caillou.h"
 #include "parallax.h"
+#include "speedParticle.h"
 
 
 
@@ -30,7 +31,8 @@ Mix_Chunk *gHigh = NULL;
 int xDir = 0;
 int yDir = 0;
 
-TCaillou Caillou;
+TCaillou g_tCaillou;
+TGfxTexture g_tCaillouTexture;
 TBounceZone * g_pBZones[TBounceZone::m_iMaxZones];
 TBounceZone * g_pActualZone = nullptr;
 TCamera * pCam;
@@ -38,6 +40,14 @@ TCamera * pCam;
 
 TParallax g_pParallax[NB_PARALLAX];
 TGfxTexture g_pParallaxTexture[NB_PARALLAX];
+TSpeedParticle g_tParticle;
+
+TGfxTexture g_tDistance;
+TGfxTexture g_tSpeed;
+TGfxTexture g_tPerdu;
+
+TGfxTexture g_tWordsTexture;
+TGfxSprite g_tWords;
 
 
 
@@ -47,6 +57,31 @@ bool LoadMedia()
 	//Loading success flag
 	bool bSuccess = true;
 	
+	//Open the font
+	g_pFont = TTF_OpenFont("fonts/zx.ttf", 46);
+	if (g_pFont == nullptr)
+	{
+		printf("Failed to load lazy font! SDL_ttf Error: %s\n", TTF_GetError());
+		bSuccess = false;
+	}
+	else
+	{
+		//TTF_SetFontStyle(g_pFont, TTF_STYLE_BOLD);
+		//Render text
+		SDL_Color textColor = { 255, 255, 255 };
+		if (!g_tDistance.loadFromRenderedText("Distance", textColor))
+		{
+			printf("Failed to render text texture!\n");
+			bSuccess = false;
+		}
+		if (!g_tSpeed.loadFromRenderedText("Distance", textColor))
+		{
+			printf("Failed to render text texture!\n");
+			bSuccess = false;
+		}
+	}
+
+
 	gHigh = Mix_LoadWAV("sound/high.wav");
 	if (gHigh == NULL)
 	{
@@ -54,17 +89,28 @@ bool LoadMedia()
 		bSuccess = false;
 	}
 
-	if (!g_pParallaxTexture[0].loadFromFile("img/sky.png"))
+	if (!g_tCaillouTexture.loadFromFile("img/rock.png")){
+		printf("Error caillou\n");
+		bSuccess = false;
+	}
+	else{
+		
+		SDL_Rect cut = { 0, 0, g_tCaillou.getRadius() * 2, g_tCaillou.getRadius() * 2};
+		g_tCaillou.m_pSprite = new TGfxSprite();
+		g_tCaillou.m_pSprite->loadFromTexture(&g_tCaillouTexture, cut);
+	}
+
+	if (!g_pParallaxTexture[0].loadFromFile("img/sky_day.png"))
 	{
 		printf("Error loading texture\n");
 		bSuccess = false;
 	}
-	if (!g_pParallaxTexture[1].loadFromFile("img/mountains.png"))
+	if (!g_pParallaxTexture[1].loadFromFile("img/mountains_day.png"))
 	{
 		printf("Error loading texture\n");
 		bSuccess = false;
 	}
-	if (!g_pParallaxTexture[2].loadFromFile("img/water.png"))
+	if (!g_pParallaxTexture[2].loadFromFile("img/water_day.png"))
 	{
 		printf("Error loading texture\n");
 		bSuccess = false;
@@ -74,25 +120,46 @@ bool LoadMedia()
 		printf("Error loading texture\n");
 		bSuccess = false;
 	}
-
+	if (!g_tWordsTexture.loadFromFile("img/words2.png"))
+	{
+		printf("Error words \n");
+		bSuccess = false;
+	}
+	SDL_Rect cut = { 200, 0, 200, 32 };
+	g_tWords.loadFromTexture(&g_tWordsTexture, cut);
+	g_tWords.setPos(SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT/2);
+	//g_tWords.setBlendMode(SDL_BLENDMODE_NONE);
+	g_tWords.setColor(0xFF, 0xFF, 0xFF);
+	
 	g_pParallax[0].setTexture(&g_pParallaxTexture[0]);
 	g_pParallax[1].setTexture(&g_pParallaxTexture[1]);
 	g_pParallax[2].setTexture(&g_pParallaxTexture[2]);
 	g_pParallax[3].setTexture(&g_pParallaxTexture[3]);
 
 	g_pParallax[0].setDepth(12);
-	g_pParallax[1].setDepth(2);
+	g_pParallax[1].setDepth(6);
 	g_pParallax[2].setDepth(1);
-	g_pParallax[3].setDepth(-5);
+	g_pParallax[3].setDepth(0.8);
 
-	Caillou.addForce(TGfxVec2(7, 6));
-	pCam = new TCamera(&Caillou, g_pBZones, g_pParallax);
+	
+
+	
+
+	g_tCaillou.addForce(TGfxVec2(4, 4));
+	pCam = new TCamera(&g_tCaillou, g_pBZones, g_pParallax, &g_tParticle);
+	pCam->updateCam();
+	for (int i = 0; i < NB_PARALLAX; i++){
+		g_pParallax[i].setPos(pCam->m_tPos);
+	}
+	g_pParallax[0].setPos(TGfxVec2(g_pParallax[0].m_tPos.x, 200));
+	g_pParallax[1].setPos(TGfxVec2(g_pParallax[1].m_tPos.x, 100));
 
 	return bSuccess;
 }
 void Update()
 {
 	//Clear screen
+	SDL_SetRenderDrawBlendMode(g_pRenderer, SDL_BLENDMODE_BLEND);
 	SDL_SetRenderDrawColor(g_pRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
 	SDL_RenderClear(g_pRenderer);
 
@@ -101,17 +168,32 @@ void Update()
 
 	//printf("Joystick angle: %f\n", joystickAngle);
 	TGfxVec2 tDeplacement;
-	if (Caillou.move(g_pActualZone, &tDeplacement)){
+	EZoneQuality result = g_tCaillou.move(g_pActualZone, &tDeplacement);
+	if (result != EZoneQuality_Amount){
 		g_pActualZone = nullptr;
+		g_tWords.setCut(g_pZoneQualityCut[result]);
 	}
 
 	for (int i = 0; i < NB_PARALLAX; i++)
 	{
 		g_pParallax[i].move(tDeplacement, pCam);
 	}
+	g_tParticle.move(g_tCaillou.m_tPos);
 	
 	pCam->updateCam();
-	//Caillou.render();
+
+	char text[20];
+	sprintf_s(text, 20, "Distance : %.2f m", g_tCaillou.m_tPos.x / 1000);
+	SDL_Color textColor = { 255, 255, 255 };
+	g_tDistance.print(text, textColor);
+
+	char text2[20];
+	sprintf_s(text2, 20, "Speed : %.2f m/s", (g_tCaillou.getDest().x / 1000) * 60);
+	g_tSpeed.print(text2, textColor);
+	
+	g_tWords.render();
+	g_tDistance.render(10, 0);
+	g_tSpeed.render(10, g_tDistance.getHeight());
 	SDL_RenderPresent(g_pRenderer);
 }
 bool Inputs(SDL_Event e)
@@ -171,8 +253,8 @@ bool Inputs(SDL_Event e)
 				Mix_PlayChannel(-1, gHigh, 0);
 				break;
 			case SDLK_SPACE:
-				if (g_pActualZone == nullptr){
-					g_pBZones[TBounceZone::m_iCount++] = new TBounceZone(Caillou.m_tPos.x + 300, 50);
+				if (g_pActualZone == nullptr && g_tCaillou.m_tPos.y - g_tCaillou.getRadius() > BASE_HAUTEUR){
+					g_pBZones[TBounceZone::m_iCount++] = new TBounceZone(g_tCaillou.m_tPos.x, 100);
 					g_pActualZone = g_pBZones[TBounceZone::m_iCount - 1];
 				}
 				break;
@@ -267,7 +349,7 @@ bool Init()
 		}
 		
 		//Create window
-		g_pWindow = SDL_CreateWindow("SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+		g_pWindow = SDL_CreateWindow("Ricochet", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 		if (g_pWindow == nullptr)
 		{
 			printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());

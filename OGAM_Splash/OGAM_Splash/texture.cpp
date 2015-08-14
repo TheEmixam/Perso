@@ -92,6 +92,13 @@ bool TGfxTexture::loadFromRenderedText(std::string textureText, SDL_Color textCo
 	return m_pTexture != nullptr;
 }
 
+void TGfxTexture::print(std::string textureText, SDL_Color textColor){
+	if (m_pTexture != nullptr){
+		free();
+		loadFromRenderedText(textureText, textColor);
+	}
+}
+
 void TGfxTexture::free()
 {
 	//Free texture if it exists
